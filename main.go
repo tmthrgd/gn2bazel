@@ -181,5 +181,10 @@ func filterDeps(target *targetProperties, targets map[string]targetProperties) (
 }
 
 func isDataTarget(target targetProperties) bool {
-	return target.Type == "copy"
+	switch target.Type {
+	case "action", "copy":
+		return true
+	default:
+		return false
+	}
 }
