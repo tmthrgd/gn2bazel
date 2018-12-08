@@ -8,11 +8,15 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
 
-var outPath = flag.String("out", "", "the output path for the Bazel BUILD files")
+var (
+	outPath = flag.String("out", "", "the output path for the Bazel BUILD files")
+	exclude = flag.String("exclude", "", "exclude targets matching this regexp")
+)
 
 func init() {
 	log.SetFlags(log.Lshortfile)
@@ -33,6 +37,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	exclude, err := regexp.Compile(*exclude)
+	if err != nil {
+		log.Fatalf("compiling -exclude failed: %v", err)
+	}
+
 	infoJSON, err := Run(*dir, "gn", "desc", "--format=json", outDir, "*")
 	if err != nil {
 		log.Fatal(err)
@@ -47,6 +56,10 @@ func main() {
 	for name, target := range targets {
 		if target.Type == "copy" {
 			target.isData = true
+		}
+
+		if exclude.MatchString(name) {
+			continue
 		}
 
 		idx := strings.LastIndex(name, ":")
