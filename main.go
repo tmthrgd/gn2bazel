@@ -7,8 +7,12 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 	"sort"
+	"strings"
 )
+
+var outPath = flag.String("out", "", "the output path for the Bazel BUILD files")
 
 func init() {
 	log.SetFlags(log.Lshortfile)
@@ -21,7 +25,6 @@ func init() {
 
 func main() {
 	dir := flag.String("dir", "", "the path to run gn commands in, must be a checkout")
-	out := flag.String("out", "BUILD", "the output path for the Bazel BUILD file")
 	flag.Parse()
 
 	outDir := flag.Arg(0)
@@ -40,24 +43,35 @@ func main() {
 		log.Fatalf("json parsing failed: %v", err)
 	}
 
-	f, err := os.Create(*out)
+	paths := make(map[string][]string)
+	for name, target := range targets {
+		if target.Type == "copy" {
+			target.isData = true
+		}
+
+		idx := strings.LastIndex(name, ":")
+		if idx < 0 {
+			log.Fatalf("invalid target name %q", name)
+		}
+
+		dir := name[:idx]
+		paths[dir] = append(paths[dir], name)
+	}
+
+	for dir, rules := range paths {
+		dir = strings.TrimPrefix(dir, "//")
+		sort.Strings(rules)
+		convert(targets, dir, rules)
+	}
+}
+
+func convert(targets map[string]targetProperties, dir string, sortedTargets []string) {
+	out := filepath.Join(*outPath, dir, "BUILD")
+	f, err := os.Create(out)
 	if err != nil {
 		log.Fatalf("creating output BUILD file failed: %v", err)
 	}
 	w := bufio.NewWriter(f)
-
-	sortedTargets := make([]string, 0, len(targets))
-	for name := range targets {
-		sortedTargets = append(sortedTargets, name)
-	}
-	sort.Strings(sortedTargets)
-
-	dataTargets := make(map[string]bool)
-	for name, target := range targets {
-		if target.Type == "copy" {
-			dataTargets[name] = true
-		}
-	}
 
 	for i, name := range sortedTargets {
 		target := targets[name]
@@ -119,7 +133,7 @@ func main() {
 
 		fmt.Fprintf(w, "# %s %s\n", target.Type, name)
 
-		deps, data := filterDeps(&target, dataTargets)
+		deps, data := filterDeps(&target, targets)
 		if err := templates.ExecuteTemplate(w, tmplName, struct {
 			Name string
 			*targetProperties
@@ -140,10 +154,10 @@ func main() {
 	}
 }
 
-func filterDeps(target *targetProperties, dataTargets map[string]bool) (deps, data []string) {
+func filterDeps(target *targetProperties, targets map[string]targetProperties) (deps, data []string) {
 	deps = make([]string, 0, len(target.Deps))
 	for _, dep := range target.Deps {
-		if dataTargets[dep] {
+		if target, ok := targets[dep]; ok && target.isData {
 			data = append(data, dep)
 		} else {
 			deps = append(deps, dep)

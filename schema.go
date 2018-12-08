@@ -40,4 +40,7 @@ type targetProperties struct {
 	// included by default.
 	RuntimeDeps   []string
 	SourceOutputs []map[string][]string
+
+	// These aren't part of the schema, but are computed from it.
+	isData bool
 }
