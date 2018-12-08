@@ -120,3 +120,36 @@ func mergeSlices(args ...[]string) []string {
 
 	return merged
 }
+
+func ruleName(name string) string {
+	return name[strings.LastIndex(name, ":")+1:]
+}
+
+func resolveLocations(v []string) []string {
+	out := make([]string, 0, len(v))
+	for _, s := range v {
+		if strings.HasPrefix(s, "//") && !strings.Contains(s, ":") {
+			s = strings.TrimPrefix(s, "//")
+		}
+
+		out = append(out, s)
+	}
+
+	return out
+}
+
+func uniqueSlice(v []string) []string {
+	out := make([]string, 0, len(v))
+outer:
+	for _, s := range v {
+		for _, os := range out {
+			if os == s {
+				continue outer
+			}
+		}
+
+		out = append(out, s)
+	}
+
+	return out
+}

@@ -10,15 +10,18 @@ var templates = template.New("gn2bazel").Funcs(template.FuncMap{
 	"print_bool":          printBool,
 	"format_cmd":          formatCmd,
 	"merge_slices":        mergeSlices,
+	"rule_name":           ruleName,
+	"resolve_locations":   resolveLocations,
+	"unique":              uniqueSlice,
 })
 
 // action -> genrule
 func init() {
 	template.Must(templates.New("genrule").Parse(`{{/**/ -}}
 genrule(
-	name = {{printf "%q" .Name}},
-	srcs = [{{merge_slices .Inputs .Sources .Deps .Data | print_slice}}],
-	outs = [{{print_slice .Outputs}}],
+	name = {{rule_name .Name | printf "%q"}},
+	srcs = [{{merge_slices .Inputs .Sources .Deps .Data | resolve_locations | print_slice}}],
+	outs = [{{resolve_locations .Outputs | print_slice}}],
 	cmd = {{format_cmd .Script .Args | printf "%q"}},
 	visibility = [{{to_bazel_visibility .Visibility | print_slice}}],
 	testonly = {{print_bool .TestOnly}},
@@ -33,8 +36,8 @@ func init() {
 
 	template.Must(templates.New("filegroup").Parse(`{{/**/ -}}
 filegroup(
-	name = {{printf "%q" .Name}},
-	srcs = [{{print_slice .Sources}}],
+	name = {{rule_name .Name | printf "%q"}},
+	srcs = [{{resolve_locations .Sources | print_slice}}],
 	data = [{{print_slice .Data}}],
 	visibility = [{{to_bazel_visibility .Visibility | print_slice}}],
 	testonly = {{print_bool .TestOnly}},
@@ -46,9 +49,9 @@ filegroup(
 func init() {
 	template.Must(templates.New("cc_binary").Parse(`{{/**/ -}}
 cc_binary(
-	name = {{printf "%q" .Name}},
+	name = {{rule_name .Name | printf "%q"}},
 	deps = [{{print_slice .Deps}}],
-	srcs = [{{print_slice .Sources}}],
+	srcs = [{{resolve_locations .Sources | unique | print_slice}}],
 	data = [{{print_slice .Data}}],
 	copts = [{{merge_slices .Cflags .Asmflags | print_slice}}],
 	defines = [{{print_slice .Defines}}],
@@ -75,15 +78,15 @@ func init() {
 func init() {
 	template.Must(templates.New("cc_library").Parse(`{{/**/ -}}
 cc_library(
-	name = {{printf "%q" .Name}},
+	name = {{rule_name .Name | printf "%q"}},
 	deps = [{{print_slice .Deps}}],
-	srcs = [{{print_slice .Sources}}],
+	srcs = [{{unique .Sources | resolve_locations | print_slice}}],
 	data = [{{print_slice .Data}}],
 	hdrs = [
 {{- if eq (print .Public) "*" -}}
-	{{filter_sources .Sources | print_slice}}
+	{{filter_sources .Sources | resolve_locations | unique | print_slice}}
 {{- else -}}
-	{{to_string_slice .Public | print_slice}}
+	{{to_string_slice .Public | resolve_locations | unique | print_slice}}
 {{- end -}}
 	],
 	copts = [{{merge_slices .Cflags .Asmflags | print_slice}}],
@@ -100,15 +103,15 @@ cc_library(
 func init() {
 	template.Must(templates.New("cc_test").Parse(`{{/**/ -}}
 cc_test(
-	name = {{printf "%q" .Name}},
+	name = {{rule_name .Name | printf "%q"}},
 	deps = [{{print_slice .Deps}}],
-	srcs = [{{print_slice .Sources}}],
+	srcs = [{{resolve_locations .Sources | print_slice}}],
 	data = [{{print_slice .Data}}],
 	hdrs = [
 {{- if eq (print .Public) "*" -}}
-	{{filter_sources .Sources | print_slice}}
+	{{filter_sources .Sources | resolve_locations | unique | print_slice}}
 {{- else -}}
-	{{to_string_slice .Public | print_slice}}
+	{{to_string_slice .Public | resolve_locations | unique | print_slice}}
 {{- end -}}
 	],
 	includes = [{{print_slice .IncludeDirs}}],
