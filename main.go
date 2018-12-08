@@ -42,6 +42,10 @@ func main() {
 		log.Fatalf("compiling -exclude failed: %v", err)
 	}
 
+	if !strings.Contains(outDir, string(filepath.Separator)) {
+		outDir = filepath.Join("out.gn", outDir)
+	}
+
 	infoJSON, err := Run(*dir, "gn", "desc", "--format=json", outDir, "*")
 	if err != nil {
 		log.Fatal(err)
