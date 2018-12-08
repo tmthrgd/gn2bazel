@@ -50,13 +50,6 @@ cc_binary(
 	deps = [{{print_slice .Deps}}],
 	srcs = [{{print_slice .Sources}}],
 	data = [{{print_slice .Data}}],
-	hdrs = [
-{{- if eq (print .Public) "*" -}}
-	{{filter_sources .Sources | print_slice}}
-{{- else -}}
-	{{to_string_slice .Public | print_slice}}
-{{- end -}}
-	],
 	copts = [{{merge_slices .Cflags .Asmflags | print_slice}}],
 	defines = [{{print_slice .Defines}}],
 	includes = [{{print_slice .IncludeDirs}}],
