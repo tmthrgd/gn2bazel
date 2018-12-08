@@ -57,11 +57,7 @@ func main() {
 	}
 
 	paths := make(map[string][]string)
-	for name, target := range targets {
-		if target.Type == "copy" {
-			target.isData = true
-		}
-
+	for name := range targets {
 		if exclude.MatchString(name) {
 			continue
 		}
@@ -174,7 +170,7 @@ func convert(targets map[string]targetProperties, dir string, sortedTargets []st
 func filterDeps(target *targetProperties, targets map[string]targetProperties) (deps, data []string) {
 	deps = make([]string, 0, len(target.Deps))
 	for _, dep := range target.Deps {
-		if target, ok := targets[dep]; ok && target.isData {
+		if isDataTarget(targets[dep]) {
 			data = append(data, dep)
 		} else {
 			deps = append(deps, dep)
@@ -182,4 +178,8 @@ func filterDeps(target *targetProperties, targets map[string]targetProperties) (
 	}
 
 	return deps, data
+}
+
+func isDataTarget(target targetProperties) bool {
+	return target.Type == "copy"
 }
