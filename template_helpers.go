@@ -93,8 +93,8 @@ func printBool(v bool) string {
 
 func formatCmd(script string, args []string) string {
 	if strings.HasPrefix(script, "//") {
-		//script = fmt.Sprintf("$(locations %s)", script)
-		script = strings.TrimPrefix(script, "//")
+		script = resolveLocation(script)
+		script = fmt.Sprintf("$(locations %s)", script)
 	}
 
 	var argsStr strings.Builder
@@ -131,19 +131,28 @@ func resolveLocations(v []string) []string {
 	for _, s := range v {
 		if strings.HasPrefix(s, "//out.gn") {
 			s = strings.TrimPrefix(s, "//")
-		} else if !strings.Contains(s, ":") {
-			dir, file := filepath.Split(s)
-			s = strings.TrimSuffix(dir, "/") + ":" + file
-
+		} else {
+			_, file := filepath.Split(s)
 			if file == "preparse-data-format.h" {
 				continue
 			}
+
+			s = resolveLocation(s)
 		}
 
 		out = append(out, s)
 	}
 
 	return out
+}
+
+func resolveLocation(s string) string {
+	if strings.Contains(s, ":") {
+		return s
+	}
+
+	dir, file := filepath.Split(s)
+	return strings.TrimSuffix(dir, "/") + ":" + file
 }
 
 func uniqueSlice(v []string) []string {
