@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -70,6 +71,8 @@ func main() {
 		pkg := name[:idx]
 		paths[pkg] = append(paths[pkg], name)
 	}
+
+	writeDummyBUILDs()
 
 	for pkg, rules := range paths {
 		sort.Strings(rules)
@@ -188,3 +191,33 @@ func isDataTarget(target targetProperties) bool {
 		return false
 	}
 }
+
+func writeDummyBUILDs() {
+	dir := *dir
+	if dir == "" {
+		dir = "."
+	}
+
+	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || !info.IsDir() {
+			return err
+		}
+
+		_, file := filepath.Split(path)
+		if file == "out.gn" {
+			return filepath.SkipDir
+		}
+
+		buildPath := filepath.Join(path, "BUILD")
+		return ioutil.WriteFile(buildPath, dummyBUILD, 0644)
+	})
+	if err != nil {
+		log.Fatalf("failed to write dummy BUILD files: %v", err)
+	}
+}
+
+var dummyBUILD = []byte(`
+package(default_visibility = ["//visibility:public"])
+
+exports_files(glob(["*"]))
+`[1:])
