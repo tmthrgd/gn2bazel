@@ -21,8 +21,8 @@ func init() {
 	template.Must(templates.New("genrule").Parse(`{{/**/ -}}
 genrule(
 	name = {{rule_name .Name | printf "%q"}},
-	srcs = [{{resolve_locations (merge_slices (slice_of .Script) .Inputs .Sources .Deps .Data) .Pkg | unique | print_slice}}],
-	outs = [{{resolve_locations .Outputs .Pkg | print_slice}}],
+	srcs = [{{merge_slices (slice_of .Script) .Inputs .Sources .Deps .Data | resolve_locations | unique | print_slice}}],
+	outs = [{{resolve_locations .Outputs | print_slice}}],
 	cmd = {{format_cmd .Script .Args | printf "%q"}},
 	visibility = [{{to_bazel_visibility .Visibility | print_slice}}],
 	testonly = {{print_bool .TestOnly}},
@@ -38,8 +38,8 @@ func init() {
 	template.Must(templates.New("filegroup").Parse(`{{/**/ -}}
 filegroup(
 	name = {{rule_name .Name | printf "%q"}},
-	srcs = [{{resolve_locations .Sources .Pkg | print_slice}}],
-	data = [{{resolve_locations .Data .Pkg | print_slice}}],
+	srcs = [{{resolve_locations .Sources | print_slice}}],
+	data = [{{resolve_locations .Data | print_slice}}],
 	visibility = [{{to_bazel_visibility .Visibility | print_slice}}],
 	testonly = {{print_bool .TestOnly}},
 )
@@ -51,9 +51,9 @@ func init() {
 	template.Must(templates.New("cc_binary").Parse(`{{/**/ -}}
 cc_binary(
 	name = {{rule_name .Name | printf "%q"}},
-	deps = [{{resolve_locations .Deps .Pkg | print_slice}}],
-	srcs = [{{resolve_locations .Sources .Pkg | unique | print_slice}}],
-	data = [{{resolve_locations .Data .Pkg | print_slice}}],
+	deps = [{{resolve_locations .Deps | print_slice}}],
+	srcs = [{{resolve_locations .Sources | unique | print_slice}}],
+	data = [{{resolve_locations .Data | print_slice}}],
 	copts = [{{merge_slices .Cflags .Asmflags | print_slice}}],
 	defines = [{{print_slice .Defines}}],
 	includes = [{{print_slice .IncludeDirs}}],
@@ -80,14 +80,14 @@ func init() {
 	template.Must(templates.New("cc_library").Parse(`{{/**/ -}}
 cc_library(
 	name = {{rule_name .Name | printf "%q"}},
-	deps = [{{resolve_locations .Deps .Pkg | print_slice}}],
-	srcs = [{{resolve_locations (unique .Sources) .Pkg | print_slice}}],
-	data = [{{resolve_locations .Data .Pkg | print_slice}}],
+	deps = [{{resolve_locations .Deps | print_slice}}],
+	srcs = [{{resolve_locations .Sources | unique | print_slice}}],
+	data = [{{resolve_locations .Data | print_slice}}],
 	hdrs = [
 {{- if eq (print .Public) "*" -}}
-	{{resolve_locations (filter_sources .Sources) .Pkg | unique | print_slice}}
+	{{filter_sources .Sources | resolve_locations | unique | print_slice}}
 {{- else -}}
-	{{resolve_locations (to_string_slice .Public) .Pkg | unique | print_slice}}
+	{{to_string_slice .Public | resolve_locations | unique | print_slice}}
 {{- end -}}
 	],
 	copts = [{{merge_slices .Cflags .Asmflags | print_slice}}],
@@ -105,14 +105,14 @@ func init() {
 	template.Must(templates.New("cc_test").Parse(`{{/**/ -}}
 cc_test(
 	name = {{rule_name .Name | printf "%q"}},
-	deps = [{{resolve_locations .Deps .Pkg | print_slice}}],
-	srcs = [{{resolve_locations .Sources .Pkg | print_slice}}],
-	data = [{{resolve_locations .Data .Pkg | print_slice}}],
+	deps = [{{resolve_locations .Deps | print_slice}}],
+	srcs = [{{resolve_locations .Sources | print_slice}}],
+	data = [{{resolve_locations .Data | print_slice}}],
 	hdrs = [
 {{- if eq (print .Public) "*" -}}
-	{{resolve_locations (filter_sources .Sources) .Pkg | unique | print_slice}}
+	{{filter_sources .Sources | resolve_locations | unique | print_slice}}
 {{- else -}}
-	{{resolve_locations (to_string_slice .Public) .Pkg | unique | print_slice}}
+	{{to_string_slice .Public | resolve_locations | unique | print_slice}}
 {{- end -}}
 	],
 	includes = [{{print_slice .IncludeDirs}}],

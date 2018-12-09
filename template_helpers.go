@@ -126,17 +126,18 @@ func ruleName(name string) string {
 	return name[strings.LastIndex(name, ":")+1:]
 }
 
-func resolveLocations(v []string, pkg string) []string {
-	if pkg != "//" {
-		pkg += "/"
-	}
-
+func resolveLocations(v []string) []string {
 	out := make([]string, 0, len(v))
 	for _, s := range v {
-		if strings.HasPrefix(s, pkg) && !strings.Contains(s, ":") {
-			s = strings.TrimPrefix(s, pkg)
-		} else if strings.HasPrefix(s, "//out.gn") {
+		if strings.HasPrefix(s, "//out.gn") {
 			s = strings.TrimPrefix(s, "//")
+		} else if !strings.Contains(s, ":") {
+			dir, file := filepath.Split(s)
+			s = strings.TrimSuffix(dir, "/") + ":" + file
+
+			if file == "preparse-data-format.h" {
+				continue
+			}
 		}
 
 		out = append(out, s)
