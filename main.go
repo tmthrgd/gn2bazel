@@ -14,6 +14,7 @@ import (
 )
 
 var (
+	dir     = flag.String("dir", "", "the path to run gn commands in, must be a checkout")
 	outPath = flag.String("out", "", "the output path for the Bazel BUILD files")
 	exclude = flag.String("exclude", "", "exclude targets matching this regexp")
 )
@@ -28,7 +29,6 @@ func init() {
 }
 
 func main() {
-	dir := flag.String("dir", "", "the path to run gn commands in, must be a checkout")
 	flag.Parse()
 
 	outDir := flag.Arg(0)
@@ -67,19 +67,19 @@ func main() {
 			log.Fatalf("invalid target name %q", name)
 		}
 
-		dir := name[:idx]
-		paths[dir] = append(paths[dir], name)
+		pkg := name[:idx]
+		paths[pkg] = append(paths[pkg], name)
 	}
 
-	for dir, rules := range paths {
-		dir = strings.TrimPrefix(dir, "//")
+	for pkg, rules := range paths {
 		sort.Strings(rules)
-		convert(targets, dir, rules)
+		convert(targets, pkg, rules)
 	}
 }
 
-func convert(targets map[string]targetProperties, dir string, sortedTargets []string) {
-	out := filepath.Join(*outPath, dir, "BUILD")
+func convert(targets map[string]targetProperties, pkg string, sortedTargets []string) {
+	pkgDir := strings.TrimPrefix(pkg, "//")
+	out := filepath.Join(*outPath, pkgDir, "BUILD")
 	f, err := os.Create(out)
 	if err != nil {
 		log.Fatalf("creating output BUILD file failed: %v", err)
@@ -153,7 +153,9 @@ func convert(targets map[string]targetProperties, dir string, sortedTargets []st
 
 			Deps []string
 			Data []string
-		}{name, &target, deps, data}); err != nil {
+
+			Pkg string
+		}{name, &target, deps, data, pkg}); err != nil {
 			log.Fatalf("executing cc_library template failed: %v", err)
 		}
 	}

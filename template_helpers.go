@@ -93,7 +93,8 @@ func printBool(v bool) string {
 
 func formatCmd(script string, args []string) string {
 	if strings.HasPrefix(script, "//") {
-		script = fmt.Sprintf("$(locations %s)", script)
+		//script = fmt.Sprintf("$(locations %s)", script)
+		script = strings.TrimPrefix(script, "//")
 	}
 
 	var argsStr strings.Builder
@@ -125,10 +126,16 @@ func ruleName(name string) string {
 	return name[strings.LastIndex(name, ":")+1:]
 }
 
-func resolveLocations(v []string) []string {
+func resolveLocations(v []string, pkg string) []string {
+	if pkg != "//" {
+		pkg += "/"
+	}
+
 	out := make([]string, 0, len(v))
 	for _, s := range v {
-		if strings.HasPrefix(s, "//") && !strings.Contains(s, ":") {
+		if strings.HasPrefix(s, pkg) && !strings.Contains(s, ":") {
+			s = strings.TrimPrefix(s, pkg)
+		} else if strings.HasPrefix(s, "//out.gn") {
 			s = strings.TrimPrefix(s, "//")
 		}
 
@@ -152,4 +159,8 @@ outer:
 	}
 
 	return out
+}
+
+func sliceOf(v ...string) []string {
+	return v
 }
