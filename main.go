@@ -154,7 +154,7 @@ func convert(targets map[string]targetProperties, pkg string, sortedTargets []st
 			Deps []string
 			Data []string
 		}{name, &target, deps, data}); err != nil {
-			log.Fatalf("executing cc_library template failed: %v", err)
+			log.Fatalf("executing template failed: %v", err)
 		}
 	}
 
