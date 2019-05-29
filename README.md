@@ -21,7 +21,7 @@ https://crbug.com/webrtc/6412 and https://github.com/nodejs/TSC/issues/464.
 
 ## Installation:
 
-`go get tmthrgd.dev/go/gn2bazel`
+`go get go.tmthrgd.dev/gn2bazel`
 
 ## Usage:
 
